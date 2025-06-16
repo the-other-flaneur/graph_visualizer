@@ -1,12 +1,4 @@
-// Networks: 
-// (grafos dirigidos)
-// Un grafo G=(V, E) donde V es un conjunto y E ⊆ VxV se llama dirigido (x, y) ≠ (y, x)
-// Notacion (x, y) = XY, XY ≠ YX
-// Una Red (Network) es una es una 3-tupla (V, E, C) donde (V, E) es un grafo dirigido y C es una funcion C: E → R, R > 0 (capacidades)
 
-import { SVGRenderer } from "./SVGRenderer";
-
-// Node class to represent nodes in the network graph
 class node {
 	private id: string; // unique identifier for the node
 	private flow: number; // current flow through the node
@@ -66,7 +58,6 @@ class node {
 	}
 }
 
-// Edge class to represent directed edges in the network graph
 class edge {
 	private source: node; // source node of the edge
 	private target: node; // target node of the edge
@@ -99,6 +90,12 @@ class edge {
 	}
 	getCapacity() {
 		return this.capacity; // returns the capacity of the edge
+	}
+	setCapacity(newCapacity: number): void {
+    if (newCapacity < 0) {
+        throw new Error("Capacity cannot be negative");
+    }
+    this.capacity = newCapacity;
 	}
 	getFlow() {
 		return this.flow; // returns the current flow through the edge
@@ -183,6 +180,29 @@ class NetworkGraph {
 		return this.edges.find(edge => edge.getSource().getId() === sourceId && edge.getTarget().getId() === targetId);
 	}
 
+	getSource() {
+		if (!this.s) {
+			throw new Error("Source node not defined");
+		}
+		return this.s;
+	}
+
+	getSink() {
+		if (!this.t) {
+			throw new Error("Sink node not defined");
+		}
+		return this.t;
+	}
+
+	getEdgesFrom(nodeId: string) {
+		const node = this.nodes.get(nodeId);
+		if (!node) {
+			throw new Error(`Node with ID ${nodeId} not found`);
+		}
+		return this.edges.filter(edge => edge.getSource() === node);
+	}
+
+
 	toString() {
 		return `NetworkGraph with ${this.nodes.size} nodes and ${this.edges.length} edges`;
 	}
@@ -193,52 +213,77 @@ class NetworkGraph {
 		return `Nodes: [${nodeList}]\nEdges: [${edgeList}]`;
 	}
 
+	clear() {
+		this.nodes.clear(); // Clear all nodes
+		this.edges = []; // Clear all edges
+		this.s = null; // Reset source node
+		this.t = null; // Reset sink node
+	}
+
 	arrangeNodesForDrawing(width: number = 800, height: number = 600): void {
-	if (!this.s || !this.t) {
-		throw new Error("Source or sink node not defined.");
-	}
+		if (!this.s || !this.t) {
+			throw new Error("Source or sink node not defined.");
+		}
 
-	// Step 1: BFS to compute levels
-	const levels: Map<number, node[]> = new Map();
-	const visited: Set<string> = new Set();
-	const queue: [node, number][] = [[this.s, 0]];
-	visited.add(this.s.getId());
+		// Step 1: BFS to compute levels
+		const levels: Map<number, node[]> = new Map();
+		const visited: Set<string> = new Set();
+		const queue: [node, number][] = [[this.s, 0]];
+		visited.add(this.s.getId());
 
-	while (queue.length > 0) {
-	const item = queue.shift();
-	if (!item) continue;
+		while (queue.length > 0) {
+			const item = queue.shift();
+			if (!item) continue;
 
-	const [currentNode, level] = item;
+			const [currentNode, level] = item;
 
-	if (!levels.has(level)) {
-		levels.set(level, []);
-	}
-	levels.get(level)!.push(currentNode);
+			if (!levels.has(level)) {
+				levels.set(level, []);
+			}
+			levels.get(level)!.push(currentNode);
 
-	for (const edge of this.edges) {
-		if (edge.getSource() === currentNode && !visited.has(edge.getTarget().getId())) {
-			visited.add(edge.getTarget().getId());
-			queue.push([edge.getTarget(), level + 1]);
+			for (const edge of this.edges) {
+				if (edge.getSource() === currentNode && !visited.has(edge.getTarget().getId())) {
+					visited.add(edge.getTarget().getId());
+					queue.push([edge.getTarget(), level + 1]);
+				}
+			}
+		}
+
+		// Step 2: Assign positions
+		const maxLevel = Math.max(...levels.keys());
+		const layerSpacing = width / (maxLevel + 1);
+
+		for (const [level, nodesAtLevel] of levels.entries()) {
+			const verticalSpacing = height / (nodesAtLevel.length + 1);
+			nodesAtLevel.forEach((node, i) => {
+				const x = level * layerSpacing;
+				const y = (i + 1) * verticalSpacing;
+				node.setX(x);
+				node.setY(y);
+			});
 		}
 	}
-}
 
+	clone(): NetworkGraph {
+		const newGraph = new NetworkGraph();
+		newGraph.s = this.s ? new node(this.s.getId(), this.s.getX(), this.s.getY()) : null;
+		newGraph.t = this.t ? new node(this.t.getId(), this.t.getX(), this.t.getY()) : null;
 
-	// Step 2: Assign positions
-	const maxLevel = Math.max(...levels.keys());
-	const layerSpacing = width / (maxLevel + 1);
-
-	for (const [level, nodesAtLevel] of levels.entries()) {
-		const verticalSpacing = height / (nodesAtLevel.length + 1);
-		nodesAtLevel.forEach((node, i) => {
-			const x = level * layerSpacing;
-			const y = (i + 1) * verticalSpacing;
-			node.setX(x);	
-			node.setY(y);
+		this.nodes.forEach((n, id) => {
+			newGraph.nodes.set(id, new node(n.getId(), n.getX(), n.getY()));
 		});
-	}
-}
 
+		this.edges.forEach(e => {
+			const sourceNode = newGraph.nodes.get(e.getSource().getId());
+			const targetNode = newGraph.nodes.get(e.getTarget().getId());
+			if (sourceNode && targetNode) {
+				newGraph.addEdge(sourceNode.getId(), targetNode.getId(), e.getCapacity());
+			}
+		});
+
+		return newGraph;
+	}
 
 }
 
