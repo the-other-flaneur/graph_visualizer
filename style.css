@@ -37,7 +37,19 @@
             display: grid;
             grid-template-columns: 300px 1fr 300px;
             gap: 20px;
-            height: calc(100vh - 200px);
+        }
+
+        #footer {
+            text-align: center;
+            margin-top: 30px;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        #footer a {
+            color: #e2e8f0;
+            text-decoration: none;
+            transition: color 0.3s;
         }
 
         .sidebar {
@@ -221,16 +233,30 @@
             border-bottom: none;
         }
 
-        .mode-indicator {
+        .step-indicator {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(102, 126, 234, 0.1);
-            color: #667eea;
-            padding: 8px 15px;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #2d3748;
+            padding: 10px 15px;
             border-radius: 20px;
             font-size: 0.8rem;
             font-weight: 500;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .step-info {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #2d3748;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
 
         .text-input-section {

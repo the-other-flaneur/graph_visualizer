@@ -257,7 +257,8 @@ class NetworkGraph {
 		for (const [level, nodesAtLevel] of levels.entries()) {
 			const verticalSpacing = height / (nodesAtLevel.length + 1);
 			nodesAtLevel.forEach((node, i) => {
-				const x = level * layerSpacing;
+				const paddingX = 100; // adjust as needed
+				const x = level * layerSpacing + paddingX;
 				const y = (i + 1) * verticalSpacing;
 				node.setX(x);
 				node.setY(y);

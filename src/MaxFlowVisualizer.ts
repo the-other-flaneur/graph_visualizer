@@ -6,6 +6,9 @@ import { Parser } from './Parser.js';
 import { AnimationController } from './AnimationController.js';
 import { Solver } from './Solver.js';
 import { FordFulkerson } from './algorithms/FordFulkerson.js';
+import { EdmondsKarp } from './algorithms/EdmondsKarp.js';
+import { Dinic } from './algorithms/Dinics.js';
+import type { Algorithm } from './algorithms/Algorithm.js';
 
 function canonicalizeUserInput(raw: string): string {
   const lines = raw
@@ -76,14 +79,20 @@ class MaxFlowVisualizer {
     };
 
     $('loadBulkBtn').addEventListener('click', () => this.loadBulkGraph());
-    $('playBtn').addEventListener('click', () => this.animationController.play());
+    
+    $('playBtn').addEventListener('click', () => {
+      this.animationController.play();
+    });
+    
     $('pauseBtn').addEventListener('click', () => this.animationController.stop());
     $('stepBtn').addEventListener('click', () => this.animationController.step());
     $('resetBtn').addEventListener('click', () => this.reset());
+    
     $('solveBtn').addEventListener('click', () => {
       this.solver.solveAll();
       this.updateStatsFromSolver();
     });
+
     $('clearBtn').addEventListener('click', () => this.clear());
 
     const speedSlider = $('speedSlider') as HTMLInputElement;
@@ -99,6 +108,18 @@ class MaxFlowVisualizer {
     });
   }
 
+  private createAlgorithmInstance(): Algorithm {
+    switch (this.currentAlgorithm) {
+      case 'ford-fulkerson':
+        return new FordFulkerson();
+      case 'dinic':
+        return new Dinic();
+      case 'edmonds-karp':
+      default:
+        return new EdmondsKarp();
+    }
+  }
+
   updateAlgorithmInfo() {
     const info = this.$('algorithmInfo');
     const algorithms = {
@@ -108,6 +129,12 @@ class MaxFlowVisualizer {
     } as const;
 
     info.innerHTML = algorithms[this.currentAlgorithm as keyof typeof algorithms] ?? 'Unknown algorithm selected.';
+  }
+
+  updateStepInfo(stepInfo: string, stepCount: number) {
+    const stepInfoEl = this.$('stepInfo');
+    stepInfoEl.textContent = stepInfo;
+    this.$('stepIndicator').textContent = `Step: ${stepCount}`;
   }
 
   updateStatsFromSolver() {
@@ -135,14 +162,19 @@ class MaxFlowVisualizer {
     try {
       const canonical = canonicalizeUserInput(raw);
       const parser = new Parser(canonical);
+      
       this.graph = parser.parse();
       this.graph.arrangeNodesForDrawing();
-      this.renderer.clear();
-      this.renderer.render(this.graph);
 
-      const algorithm = new FordFulkerson(); // Could be selected dynamically
+      this.renderer.setGraph(this.graph);
+      this.renderer.clear();
+      this.renderer.render();
+
+      const algorithm = this.createAlgorithmInstance(); // Could be selected dynamically
+
       this.solver = new Solver(algorithm, this.graph);
-      this.animationController = new AnimationController(this.solver, this.renderer);
+      
+      this.animationController = new AnimationController(this.solver, this.renderer, this);
     
       input.value = canonical;
     } catch (e) {
@@ -153,6 +185,8 @@ class MaxFlowVisualizer {
   clear() {
     this.graph.clear();
     this.renderer.clear();
+    this.solver = new Solver(new FordFulkerson(), this.graph);
+    this.animationController = new AnimationController(this.solver, this.renderer, this);
     this.updateStats("0", "0", "0", "0");
   }
 
@@ -160,10 +194,11 @@ class MaxFlowVisualizer {
     this.animationController.stop();
     this.loadBulkGraph();
     this.updateStats("0", "0", "0", "0");
+    this.updateStepInfo("", 0);
   }
 
   start() {
-    this.renderer = new SVGRenderer("graph-canvas");
+    this.renderer = new SVGRenderer("graph-canvas", this.graph || new NetworkGraph());
     this.initializeEventListeners();
   }
 }

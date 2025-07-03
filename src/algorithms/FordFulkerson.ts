@@ -8,15 +8,14 @@ class FordFulkerson extends Algorithm {
     private sink!: node;
     private startTime: number = 0;
     private finished: boolean = false;
+    private stepInfo: string = "";
+    private stepCount: number = 0;
 
     constructor() {
         super("Ford-Fulkerson");
     }
 
     initialize(graph: NetworkGraph): void {
-
-        console.log("Initializing Ford-Fulkerson algorithm");
-
         this.graph = graph;
         this.source = this.graph.getNode("s")!;
         this.sink = this.graph.getNode("t")!;
@@ -29,11 +28,14 @@ class FordFulkerson extends Algorithm {
         this.finished = false;
     }
 
+    /**
+     * Depth-first search to find an augmenting path in the residual graph.
+     * @param {node} current - The current node in the DFS.
+     * @param {Set<string>} visited - Set of visited node IDs to avoid cycles.
+     * @param {edge[]} path - The current path being explored.
+     * @returns {boolean} True if an augmenting path is found, false otherwise.
+     */
     private dfs(current: node, visited: Set<string>, path: edge[]): boolean {
-
-        console.log(`DFS at node ${current.getId()}`);
-        console.log("Visited:", Array.from(visited));
-
 
         if (current.getId() === this.sink.getId()) {
             return true;
@@ -42,7 +44,9 @@ class FordFulkerson extends Algorithm {
         visited.add(current.getId());
 
         for (const edge of this.residualGraph.getEdgesFrom(current.getId())) {
+            
             console.log(`Checking edge ${edge.getSource().getId()} -> ${edge.getTarget().getId()} with capacity ${edge.getCapacity()}`);
+            
             const to = edge.getTarget();
             if (!visited.has(to.getId()) && edge.getCapacity() > 0) {
                 path.push(edge);
@@ -56,6 +60,12 @@ class FordFulkerson extends Algorithm {
         return false;
     }
 
+
+    /**
+     * Executes one step of the Ford-Fulkerson algorithm.
+     * It finds an augmenting path using DFS and augments the flow along that path.
+     * @returns {boolean} True if an augmenting path was found, false if the algorithm is finished.
+     */
     step(): boolean {
         if (this.finished) return false;
 
@@ -64,11 +74,8 @@ class FordFulkerson extends Algorithm {
 
         const found = this.dfs(this.source, visited, path);
 
-        console.log("found: " + found + " and time " + (this.startTime - performance.now()));
-
         if (!found) {
             this.finished = true;
-            console.log("is finished")
             return false;
         }
 
@@ -94,32 +101,45 @@ class FordFulkerson extends Algorithm {
             }
         }
 
-        console.log("step fulkerson");
-
         this.flow += bottleneck;
-
-        console.log("flow");
         this.iterations += 1;
         const nodePath = path.map(e => e.getSource().getId()).concat(this.sink.getId());
         this.lastPath = nodePath;
         this.allPaths.push(nodePath);
 
+        this.stepCount += 1;
+        this.stepInfo = `Step ${this.iterations}: Found an augmenting path using DFS and augments the flow along that path`;
+
         return true;
     }
 
+    /**
+     * Checks if the algorithm has finished execution.
+     * @returns {boolean} True if the algorithm is finished, false otherwise.
+     */
     isFinished(): boolean {
         return this.finished;
     }
 
+    /**
+     * Returns the current state of the algorithm for visualization.
+     * This includes highlighted nodes and edges based on the last found path.
+     */
     getCurrentState() {
         return {
             highlightedNodes: this.lastPath ?? [],
             highlightedEdges: this.lastPath
                 ? this.lastPath.slice(0, -1).map((from, i) => [from, this.lastPath![i + 1]] as [string, string])
                 : [],
+            stepInfo: this.stepInfo,
+            stepCount: this.stepCount,
         };
     }
 
+    /**
+     * Returns statistics about the algorithm's execution.
+     * This includes the maximum flow found, number of iterations, all paths found, and time taken.
+     */
     getStats() {
         const timeElapsed = performance.now() - this.startTime;
         return {

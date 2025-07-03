@@ -8,12 +8,11 @@ class Solver {
   constructor(algorithm: Algorithm, graph: NetworkGraph) {
     this.algorithm = algorithm;
     this.graph = graph;
+    
     this.algorithm.initialize(graph);
   }
-
+  
   step(): boolean {
-	console.log(`Stepping`);
-
     return this.algorithm.step();
   }
 

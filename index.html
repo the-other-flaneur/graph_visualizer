@@ -8,6 +8,7 @@
 </head>
 <body>
     <div class="container">
+
         <div class="header">
             <h1>Max Flow Algorithm Visualizer</h1>
             <p>Interactive visualization of Ford-Fulkerson, Edmonds-Karp, and Dinic's algorithms</p>
@@ -63,7 +64,8 @@
 
             <!-- Center - Visualization Area -->
             <div class="visualization-area">
-                <div class="mode-indicator" id="modeIndicator">no-mode</div>
+                <div class="step-indicator" id="stepIndicator">Step: 0</div>
+                <div class="step-info" id="stepInfo"></div>
                 <svg id="graph-canvas" viewBox="0 0 800 600">
                     <defs>
                         <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -108,6 +110,13 @@
                 </div>
 
                 <div class="control-section">
+                    <div id="traceContainer">
+                        <h3>Trace Log</h3>
+                        <ul id="traceLog" style="font-family: monospace; font-size: 0.9em;"></ul>
+                    </div>
+                </div>
+
+                <div class="control-section">
                     <h3>Instructions</h3>
                     <div class="instructions" id="instructions">
                         <strong>Bulk Input:</strong><br>
@@ -118,7 +127,13 @@
                 </div>
 
             </div>
-        </div>    
+        </div>   
+        
+        <div id="footer">
+            <p>Created by Theotherflaneur</p>
+            <p>Source code available on <a href="" target="_blank">GitHub</a></p>
+            <p>Please support my work by <a href="" target="">Patreon</a></p>
+        </div>
     </div>
 	<script type="module" src="./dist/main.js"></script>
 </body>
