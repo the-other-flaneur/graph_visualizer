@@ -4,17 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Max Flow Algorithm Visualizer</title>
+    <meta name="description" content="Visualize Ford-Fulkerson, Edmonds-Karp, and Dinic algorithms for max flow in graphs.">
+    <meta name="robots" content="index, follow">
+    <meta charset="UTF-8">
+
+    <meta property="og:title" content="Max Flow Visualizer" />
+    <meta property="og:description" content="Interactive visualization of graph max-flow algorithms." />
+    <!-- <meta property="og:image" content="https://yourdomain.com/preview.png" /> -->
+    <!-- <meta property="og:url" content="https://yourdomain.com/" /> -->
+    <meta property="og:type" content="website" />
+
+    <meta name="keywords" content="graph, algorithm, visualization, max flow, ford fulkerson, edmonds karp, dinic" />
+
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
 
-        <div class="header">
+        <header class="header">
             <h1>Max Flow Algorithm Visualizer</h1>
             <p>Interactive visualization of Ford-Fulkerson, Edmonds-Karp, and Dinic's algorithms</p>
-        </div>
+        </header>
 
-        <div class="main-content">
+        <main class="main-content">
 
             <!-- Left Sidebar - Algorithm Selection & Graph Controls -->
             <div class="sidebar">
@@ -31,7 +43,7 @@
                 <div class="control-section">                        
                         <div class="bulk-input">
                             <h4>Bulk Graph Input</h4>
-                            <textarea id="bulkInput" class="bulk-textarea" placeholder="Enter graph: "></textarea>
+                            <textarea id="bulkInput" class="bulk-textarea" placeholder="Enter graph:                             s                            A                            B                            t                            sA:10                            sB:10                            At:10                            Bt:10 "></textarea>
                             <button class="btn btn-primary" id="loadBulkBtn" style="width: 100%; margin-top: 8px;">Load Graph</button>
                         </div>
                 </div>
@@ -127,13 +139,13 @@
                 </div>
 
             </div>
-        </div>   
+        </main>   
         
-        <div id="footer">
+        <footer id="footer">
             <p>Created by Theotherflaneur</p>
             <p>Source code available on <a href="" target="_blank">GitHub</a></p>
             <p>Please support my work by <a href="" target="">Patreon</a></p>
-        </div>
+        </footer>
     </div>
 	<script type="module" src="./dist/main.js"></script>
 </body>
