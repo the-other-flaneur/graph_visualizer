@@ -6,30 +6,33 @@
     <title>Max Flow Algorithm Visualizer</title>
     <meta name="description" content="Visualize Ford-Fulkerson, Edmonds-Karp, and Dinic algorithms for max flow in graphs.">
     <meta name="robots" content="index, follow">
-    <meta charset="UTF-8">
 
     <meta property="og:title" content="Max Flow Visualizer" />
     <meta property="og:description" content="Interactive visualization of graph max-flow algorithms." />
-    <!-- <meta property="og:image" content="https://yourdomain.com/preview.png" /> -->
-    <!-- <meta property="og:url" content="https://yourdomain.com/" /> -->
     <meta property="og:type" content="website" />
 
     <meta name="keywords" content="graph, algorithm, visualization, max flow, ford fulkerson, edmonds karp, dinic" />
 
     <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
+    <!-- Main App Container - Full Height -->
+    <div class="app-container">
 
+        <!-- Compact Header -->
         <header class="header">
             <h1>Max Flow Algorithm Visualizer</h1>
             <p>Interactive visualization of Ford-Fulkerson, Edmonds-Karp, and Dinic's algorithms</p>
         </header>
 
+        <!-- Main Content Grid -->
         <main class="main-content">
 
             <!-- Left Sidebar - Algorithm Selection & Graph Controls -->
-            <div class="sidebar">
+            <aside class="sidebar">
 
                 <div class="control-section">
                     <h3>Algorithm</h3>
@@ -41,16 +44,24 @@
                 </div>
 
                 <div class="control-section">                        
-                        <div class="bulk-input">
-                            <h4>Bulk Graph Input</h4>
-                            <textarea id="bulkInput" class="bulk-textarea" placeholder="Enter graph:                             s                            A                            B                            t                            sA:10                            sB:10                            At:10                            Bt:10 "></textarea>
-                            <button class="btn btn-primary" id="loadBulkBtn" style="width: 100%; margin-top: 8px;">Load Graph</button>
-                        </div>
+                    <div class="bulk-input">
+                        <h4>Bulk Graph Input</h4>
+                        <textarea id="bulkInput" class="bulk-textarea" placeholder="Enter graph:
+s
+A
+B
+t
+sA:10
+sB:10
+At:10
+Bt:10"></textarea>
+                        <button class="btn btn-primary" id="loadBulkBtn" style="width: 100%; margin-top: 8px;">Load Graph</button>
+                    </div>
                 </div>
 
                 <div class="control-section">
                     <h3>Solver</h3>
-                    <div class="solver-controls">
+                    <div class="graph-controls">
                         <button class="btn btn-primary" id="solveBtn">🔍 Solve</button>
                         <button class="btn btn-secondary" id="clearBtn">🗑 Clear</button>
                     </div>
@@ -71,11 +82,11 @@
                         </div>
                     </div>
                 </div>
-		
-            </div>
+
+            </aside>
 
             <!-- Center - Visualization Area -->
-            <div class="visualization-area">
+            <section class="visualization-area">
                 <div class="step-indicator" id="stepIndicator">Step: 0</div>
                 <div class="step-info" id="stepInfo"></div>
                 <svg id="graph-canvas" viewBox="0 0 800 600">
@@ -85,10 +96,10 @@
                         </marker>
                     </defs>
                 </svg>
-            </div>
+            </section>
 
             <!-- Right Sidebar - Information & Stats -->
-            <div class="sidebar">
+            <aside class="sidebar">
 
                 <div class="control-section">
                     <h3>Algorithm Info</h3>
@@ -124,7 +135,9 @@
                 <div class="control-section">
                     <div id="traceContainer">
                         <h3>Trace Log</h3>
-                        <ul id="traceLog" style="font-family: monospace; font-size: 0.9em;"></ul>
+                        <div class="stats">
+                            <ul id="traceLog" style="font-family: 'JetBrains Mono', monospace; font-size: 0.8em; max-height: 150px; overflow-y: auto; padding-left: 1rem;"></ul>
+                        </div>
                     </div>
                 </div>
 
@@ -138,13 +151,14 @@
                     </div>
                 </div>
 
-            </div>
+            </aside>
         </main>   
         
+        <!-- Compact Footer -->
         <footer id="footer">
-            <p>Created by Theotherflaneur</p>
-            <p>Source code available on <a href="" target="_blank">GitHub</a></p>
-            <p>Please support my work by <a href="" target="">Patreon</a></p>
+            <p>Created by Theotherflaneur • 
+            <a href="#" target="_blank">GitHub</a> • 
+            <a href="#" target="_blank">Patreon</a></p>
         </footer>
     </div>
 	<script type="module" src="./dist/main.js"></script>
