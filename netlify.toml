@@ -1,5 +1,5 @@
 [build]
-  command = "npx tsc"
+  command = "npx -p typescript tsc"
   publish = "."
 
 [build.environment]
