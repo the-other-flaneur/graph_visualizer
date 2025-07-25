@@ -55,7 +55,7 @@ class SVGRenderer {
     this.svg.appendChild(text);
   }
 
-  drawEdge(fromX: number, fromY: number, toX: number, toY: number, label?: string, fromId?: string, toId?: string) {
+  drawForwardEdge(fromX: number, fromY: number, toX: number, toY: number, label?: string, fromId?: string, toId?: string) {
   const svgNS = "http://www.w3.org/2000/svg";
   const radius = 20; // same as node radius
 
@@ -81,8 +81,8 @@ class SVGRenderer {
   line.setAttribute("y2", endY.toString());
   line.setAttribute("stroke", "#475569"); // slate-600
   line.setAttribute("stroke-width", "2.5");
-  line.setAttribute("marker-end", "url(#arrowhead)");
-
+  line.setAttribute("marker-end", "url(#arrowhead-forward)"); // Use forward arrowhead marker
+  
   if (fromId && toId) {
     line.setAttribute("id", `edge-${fromId}-${toId}`);
   }
@@ -107,6 +107,63 @@ class SVGRenderer {
   }
 }
 
+  drawBackwardEdge(fromX: number, fromY: number, toX: number, toY: number, label?: string, fromId?: string, toId?: string) {
+    const svgNS = "http://www.w3.org/2000/svg";
+    const radius = 20;
+
+    // Calculate angle and offset for curve
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const length = Math.sqrt(dx * dx + dy * dy);
+
+    const unitX = dx / length;
+    const unitY = dy / length;
+
+    // Offset start and end points by radius
+    const startX = fromX + unitX * radius;
+    const startY = fromY + unitY * radius;
+    const endX = toX - unitX * radius;
+    const endY = toY - unitY * radius;
+
+    // Calculate control point for curve (perpendicular offset)
+    const curveOffset = 40; // adjust for more/less curve
+    const perpX = -unitY;
+    const perpY = unitX;
+    const midX = (startX + endX) / 2 + perpX * curveOffset;
+    const midY = (startY + endY) / 2 + perpY * curveOffset;
+
+    // Draw curved dashed edge (quadratic Bezier)
+    const path = document.createElementNS(svgNS, "path");
+    const d = `M ${startX} ${startY} Q ${midX} ${midY} ${endX} ${endY}`;
+    path.setAttribute("d", d);
+    path.setAttribute("stroke", "#1e293b"); // orange-ish for backward
+    path.setAttribute("stroke-width", "2.5");
+    path.setAttribute("stroke-dasharray", "5,5");
+    path.setAttribute("fill", "none");
+    path.setAttribute("marker-start", "url(#arrowhead-backward)"); // Use backward arrowhead marker
+
+
+    if (fromId && toId) {
+      path.setAttribute("id", `edge-${fromId}-${toId}`);
+    }
+    this.svg.appendChild(path);
+
+    // Draw label near curve
+    if (label) {
+      const labelX = midX;
+      const labelY = midY - 5;
+      const text = document.createElementNS(svgNS, "text");
+      text.setAttribute("x", labelX.toString());
+      text.setAttribute("y", labelY.toString());
+      text.setAttribute("text-anchor", "middle");
+      text.setAttribute("fill", "#1e293b");
+      text.setAttribute("font-size", "12");
+      text.setAttribute("font-weight", "500");
+      text.textContent = label;
+      this.svg.appendChild(text);
+    }
+  }
+
 
   highlightNode(id: string, color: string = "#f6ad55") {
     const node = document.getElementById(`node-${id}`);
@@ -123,6 +180,7 @@ class SVGRenderer {
       edge.setAttribute("stroke", color);
     }
   }
+
 
   clearHighlights() {
     const nodes = this.svg.querySelectorAll("circle");
@@ -141,25 +199,53 @@ class SVGRenderer {
     });
 
     // Draw edges
-    this.graph.getEdges().forEach((e: edge) => {
+    this.graph.getForwardEdges().forEach((e: edge) => {
       const from = e.getSource();
       const to = e.getTarget();
-      this.drawEdge(from.getX(), from.getY(), to.getX(), to.getY(), e.getCapacity().toString(), from.getId(), to.getId());
+      this.drawForwardEdge(from.getX(), from.getY(), to.getX(), to.getY(), e.getCapacity().toString(), from.getId(), to.getId());
+    });
+
+    // Draw backward edges
+    this.graph.getBackwardEdges().forEach((e: edge) => {
+      const from = e.getSource();
+      const to = e.getTarget();
+      this.drawBackwardEdge(from.getX(), from.getY(), to.getX(), to.getY(), e.getCapacity().toString(), from.getId(), to.getId());
     });
 
     // Add arrowhead marker
     const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-    const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
-    marker.setAttribute("id", "arrowhead");
-    marker.setAttribute("markerWidth", "10");
-    marker.setAttribute("markerHeight", "7");
-    marker.setAttribute("refX", "9");
-    marker.setAttribute("refY", "3.5");
-    marker.setAttribute("orient", "auto");
+    // Forward arrowhead marker (thinner, well aligned)
+    const markerForward = document.createElementNS("http://www.w3.org/2000/svg", "marker");
+    markerForward.setAttribute("id", "arrowhead-forward");
+    markerForward.setAttribute("markerWidth", "8");
+    markerForward.setAttribute("markerHeight", "6");
+    markerForward.setAttribute("refX", "7");
+    markerForward.setAttribute("refY", "3");
+    markerForward.setAttribute("orient", "auto");
+    markerForward.setAttribute("markerUnits", "strokeWidth");
 
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("d", "M 0 0 L 10 3.5 L 0 7 Z");
-    path.setAttribute("fill", "#4a5568"); // gray-600
+    const pathForward = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    pathForward.setAttribute("d", "M 0 1 L 8 3 L 0 5 Z"); // thinner triangle
+    pathForward.setAttribute("fill", "#4a5568");
+    markerForward.appendChild(pathForward);
+
+    // Backward arrowhead marker (thinner, flipped, well aligned)
+    const markerBackward = document.createElementNS("http://www.w3.org/2000/svg", "marker");
+    markerBackward.setAttribute("id", "arrowhead-backward");
+    markerBackward.setAttribute("markerWidth", "8");
+    markerBackward.setAttribute("markerHeight", "6");
+    markerBackward.setAttribute("refX", "1");
+    markerBackward.setAttribute("refY", "3");
+    markerBackward.setAttribute("orient", "auto");
+    markerBackward.setAttribute("markerUnits", "strokeWidth");
+
+    const pathBackward = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    pathBackward.setAttribute("d", "M 10 1 L 0 3.5 L 10 5 Z"); // thinner triangle
+    pathBackward.setAttribute("fill", "#1e293b");
+    markerBackward.appendChild(pathBackward);
+
+    defs.appendChild(markerForward);
+    defs.appendChild(markerBackward);
 
     // Add drop shadow filter
     const filter = document.createElementNS("http://www.w3.org/2000/svg", "filter");
@@ -176,8 +262,6 @@ class SVGRenderer {
     feDropShadow.setAttribute("flood-color", "#000000");
     feDropShadow.setAttribute("flood-opacity", "0.3");
 
-    marker.appendChild(path);
-    defs.appendChild(marker);
     filter.appendChild(feDropShadow);
     defs.appendChild(filter);
     this.svg.appendChild(defs);

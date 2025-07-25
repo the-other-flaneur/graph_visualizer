@@ -61,6 +61,7 @@ export class Parser {
       }
 
       graph.addEdge(fromId, toId, capacity);
+      graph.addBackwardEdge(toId, fromId, capacity); // Add backward edge with the same capacity
     }
 
     return graph;

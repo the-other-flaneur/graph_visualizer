@@ -112,13 +112,14 @@ class edge {
 class NetworkGraph {
 
 	private nodes: Map<string, node>; // Map to hold nodes by their IDs
-	private edges: edge[]; // Array to hold edges
+	private forwardEdges: edge[]; // Array to hold edges
+	private backwardEdges: edge[] = []; // Array to hold backward edges
 	private t: node | null = null; // Sink node, initially null
 	private s: node | null = null; // Source node, initially null
 
 	constructor() {
 		this.nodes = new Map<string, node>(); // Map to hold nodes by their IDs
-		this.edges = []; // Array to hold edges
+		this.forwardEdges = []; // Array to hold edges
 	}
 
 	addSource(id: string) {
@@ -161,23 +162,42 @@ class NetworkGraph {
 			throw new Error(`Source or target node not found: ${sourceId}, ${targetId}`);
 		}
 		const newEdge = new edge(sourceNode, targetNode, capacity);
-		this.edges.push(newEdge);
+		this.forwardEdges.push(newEdge);
+		return newEdge;
+	}
+
+	addBackwardEdge(sourceId: string, targetId: string, capacity: number) {
+		const sourceNode = this.nodes.get(sourceId);
+		const targetNode = this.nodes.get(targetId);
+		if (!sourceNode || !targetNode) {
+			throw new Error(`Source or target node not found: ${sourceId}, ${targetId}`);
+		}
+		const newEdge = new edge(targetNode, sourceNode, capacity);
+		this.backwardEdges.push(newEdge);
 		return newEdge;
 	}
 
 	getNodes() {
 		return Array.from(this.nodes.values());
 	}
-	getEdges() {
-		return this.edges;
+	getForwardEdges() {
+		return this.forwardEdges;
+	}
+
+	getBackwardEdges() {
+		return this.backwardEdges;
 	}
 
 	getNode(id: string) {
 		return this.nodes.get(id);
 	}
 
-	getEdge(sourceId: string, targetId: string) {
-		return this.edges.find(edge => edge.getSource().getId() === sourceId && edge.getTarget().getId() === targetId);
+	getForwardEdge(sourceId: string, targetId: string) {
+		return this.forwardEdges.find(edge => edge.getSource().getId() === sourceId && edge.getTarget().getId() === targetId);
+	}
+
+	getBackwardEdge(sourceId: string, targetId: string) {
+		return this.backwardEdges.find(edge => edge.getSource().getId() === sourceId && edge.getTarget().getId() === targetId);
 	}
 
 	getSource() {
@@ -194,28 +214,37 @@ class NetworkGraph {
 		return this.t;
 	}
 
-	getEdgesFrom(nodeId: string) {
+	getForwardEdgesFrom(nodeId: string) {
 		const node = this.nodes.get(nodeId);
 		if (!node) {
 			throw new Error(`Node with ID ${nodeId} not found`);
 		}
-		return this.edges.filter(edge => edge.getSource() === node);
+		return this.forwardEdges.filter(edge => edge.getSource() === node);
 	}
 
+	getBackwardEdgesFrom(nodeId: string) {
+		const node = this.nodes.get(nodeId);
+		if (!node) {
+			throw new Error(`Node with ID ${nodeId} not found`);
+		}
+		return this.backwardEdges.filter(edge => edge.getSource() === node);
+	}
 
 	toString() {
-		return `NetworkGraph with ${this.nodes.size} nodes and ${this.edges.length} edges`;
+		return `NetworkGraph with ${this.nodes.size} nodes and ${this.forwardEdges.length} forward edges and ${this.backwardEdges.length} backward edges`;
 	}
 
 	prettyPrint() {
 		const nodeList = Array.from(this.nodes.values()).map(n => `${n.getId()} (${n.getX()}, ${n.getY()})`).join(", ");
-		const edgeList = this.edges.map(e => `${e.getSource().getId()} -> ${e.getTarget().getId()} (Capacity: ${e.getCapacity()}, Flow: ${e.getFlow()})`).join(", ");
-		return `Nodes: [${nodeList}]\nEdges: [${edgeList}]`;
+		const forwardEdgeList = this.forwardEdges.map(e => `${e.getSource().getId()} -> ${e.getTarget().getId()} (Capacity: ${e.getCapacity()}, Flow: ${e.getFlow()})`).join(", ");
+		const backwardEdgeList = this.backwardEdges.map(e => `${e.getSource().getId()} -> ${e.getTarget().getId()} (Capacity: ${e.getCapacity()}, Flow: ${e.getFlow()})`).join(", ");
+		return `Nodes: [${nodeList}]\nForward Edges: [${forwardEdgeList}]\nBackward Edges: [${backwardEdgeList}]`;
 	}
 
 	clear() {
 		this.nodes.clear(); // Clear all nodes
-		this.edges = []; // Clear all edges
+		this.forwardEdges = []; // Clear all forward edges
+		this.backwardEdges = []; // Clear all backward edges
 		this.s = null; // Reset source node
 		this.t = null; // Reset sink node
 	}
@@ -242,7 +271,7 @@ class NetworkGraph {
 			}
 			levels.get(level)!.push(currentNode);
 
-			for (const edge of this.edges) {
+			for (const edge of this.forwardEdges) {
 				if (edge.getSource() === currentNode && !visited.has(edge.getTarget().getId())) {
 					visited.add(edge.getTarget().getId());
 					queue.push([edge.getTarget(), level + 1]);
@@ -275,11 +304,19 @@ class NetworkGraph {
 			newGraph.nodes.set(id, new node(n.getId(), n.getX(), n.getY()));
 		});
 
-		this.edges.forEach(e => {
+		this.forwardEdges.forEach(e => {
 			const sourceNode = newGraph.nodes.get(e.getSource().getId());
 			const targetNode = newGraph.nodes.get(e.getTarget().getId());
 			if (sourceNode && targetNode) {
 				newGraph.addEdge(sourceNode.getId(), targetNode.getId(), e.getCapacity());
+			}
+		});
+
+		this.backwardEdges.forEach(e => {
+			const sourceNode = newGraph.nodes.get(e.getSource().getId());
+			const targetNode = newGraph.nodes.get(e.getTarget().getId());
+			if (sourceNode && targetNode) {
+				newGraph.addBackwardEdge(sourceNode.getId(), targetNode.getId(), e.getCapacity());
 			}
 		});
 

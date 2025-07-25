@@ -43,7 +43,7 @@ class FordFulkerson extends Algorithm {
 
         visited.add(current.getId());
 
-        for (const edge of this.residualGraph.getEdgesFrom(current.getId())) {
+        for (const edge of this.residualGraph.getForwardEdgesFrom(current.getId())) {
             
             console.log(`Checking edge ${edge.getSource().getId()} -> ${edge.getTarget().getId()} with capacity ${edge.getCapacity()}`);
             
@@ -87,17 +87,17 @@ class FordFulkerson extends Algorithm {
             const fromId = edge.getSource().getId();
             const toId = edge.getTarget().getId();
 
-            const forward = this.residualGraph.getEdge(fromId, toId);
+            const forward = this.residualGraph.getForwardEdge(fromId, toId);
             if (forward) {
                 forward.setCapacity(forward.getCapacity() - bottleneck);
             }
 
-            const backward = this.residualGraph.getEdge(toId, fromId);
+            const backward = this.residualGraph.getBackwardEdge(toId, fromId);
             if (backward) {
                 backward.setCapacity(backward.getCapacity() + bottleneck);
             } else {
                 // Add back edge if it doesn't exist
-                this.residualGraph.addEdge(toId, fromId, bottleneck);
+                this.residualGraph.addBackwardEdge(toId, fromId, bottleneck);
             }
         }
 

@@ -49,18 +49,18 @@ class EdmondsKarp extends Algorithm {
     for (let i = 0; i < path.length - 1; i++) {
       const from = path[i];
       const to = path[i + 1];
-      const edge = this.graph.getEdge(from, to);
+      const edge = this.graph.getForwardEdge(from, to);
 
       if (edge) {
         edge.setFlow(edge.getFlow() + bottleneck);
       }
 
-      const reverseEdge = this.graph.getEdge(to, from);
+      const reverseEdge = this.graph.getForwardEdge(to, from);
       if (reverseEdge) {
         reverseEdge.setFlow(reverseEdge.getFlow() - bottleneck);
       } else {
         this.graph.addEdge(to, from, 0);
-        const newReverse = this.graph.getEdge(to, from);
+        const newReverse = this.graph.getForwardEdge(to, from);
         if (newReverse) {
           newReverse.setFlow(-bottleneck);
         }
@@ -99,7 +99,7 @@ class EdmondsKarp extends Algorithm {
 
     while (queue.length > 0) {
       const current = queue.shift()!;
-      for (const edge of this.graph.getEdgesFrom(current)) {
+      for (const edge of this.graph.getForwardEdgesFrom(current)) {
         const residualCapacity = edge.getCapacity() - edge.getFlow();
         const neighbor = edge.getTarget().getId();
         if (residualCapacity > 0 && !visited.has(neighbor)) {
@@ -113,7 +113,7 @@ class EdmondsKarp extends Algorithm {
             let bottleneck = Infinity;
             while (node !== this.source) {
               const prev = this.parentMap.get(node)!;
-              const e = this.graph.getEdge(prev, node)!;
+              const e = this.graph.getForwardEdge(prev, node)!;
               bottleneck = Math.min(bottleneck, e.getCapacity() - e.getFlow());
               path.unshift(node);
               node = prev;
