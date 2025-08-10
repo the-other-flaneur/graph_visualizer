@@ -1,6 +1,28 @@
 import { Algorithm } from "./Algorithm.js";
 import { NetworkGraph, Edge, Node } from "../NetworkGraph.js";
 
+// Helper class to track edge direction in the path
+class PathEdge {
+    constructor(
+        public edge: Edge,
+        public isForward: boolean
+    ) {}
+
+    getResidualCapacity(): number {
+        return this.isForward 
+            ? this.edge.getResidualCapacity()  // Forward: capacity - flow
+            : this.edge.getFlow();             // Backward: current flow
+    }
+
+    augment(flow: number): void {
+        if (this.isForward) {
+            this.edge.augment(flow);    // Increase flow
+        } else {
+            this.edge.augment(-flow);   // Decrease flow (negative augment)
+        }
+    }
+}
+
 class FordFulkerson extends Algorithm {
     public graph!: NetworkGraph;
     public source!: Node;
@@ -11,11 +33,16 @@ class FordFulkerson extends Algorithm {
     }  
 
     initialize(graph: NetworkGraph): Algorithm {
-        // Initialize the algorithm with the given graph
         console.log("Initializing Ford-Fulkerson algorithm");
         this.graph = graph;
-        this.source = graph.getSource();
-        this.sink = graph.getSink();
+
+        try {
+            this.source = graph.getSource();
+            this.sink = graph.getSink();
+        } catch (error) {
+            throw new Error("Graph must have both source 's' and sink 't' nodes");
+        }
+
         this.startTime = 0;
         this.stepCount = 0;
         this.maxFlow = 0;
@@ -29,26 +56,31 @@ class FordFulkerson extends Algorithm {
 
     /**
      * Depth-first search to find an augmenting path in the residual graph.
-     * @param {node} current - The current node in the DFS.
-     * @param {Set<string>} visited - Set of visited node IDs to avoid cycles.
-     * @param {edge[]} path - The current path being explored.
-     * @returns {boolean} True if an augmenting path is found, false otherwise.
      */
-    private dfs(current: Node, visited: Set<string>, path: Edge[]): boolean {
-        
-        console.log(`DFS visiting node: ${current.getId()}`);
-        
-        // implement DFS to find an augmenting path
+    private dfs(current: Node, visited: Set<string>, path: PathEdge[]): boolean {
         if (current === this.sink) {
-            return true; // Found a path to the sink
+            return true;
         }
 
         visited.add(current.getId());
 
+        // Check forward edges
         for (const edge of this.graph.getForwardEdgesFrom(current)) {
             const neighbor = edge.getTarget();
             if (!visited.has(neighbor.getId()) && edge.getResidualCapacity() > 0) {
-                path.push(edge);
+                path.push(new PathEdge(edge, true));
+                if (this.dfs(neighbor, visited, path)) {
+                    return true;
+                }
+                path.pop();
+            }
+        }
+
+        // Check backward edges (for flow cancellation)
+        for (const edge of this.graph.getBackwardEdgesTo(current)) {
+            const neighbor = edge.getSource();
+            if (!visited.has(neighbor.getId()) && edge.getFlow() > 0) {
+                path.push(new PathEdge(edge, false));
                 if (this.dfs(neighbor, visited, path)) {
                     return true;
                 }
@@ -59,14 +91,15 @@ class FordFulkerson extends Algorithm {
         return false;
     }
 
-
     /**
      * Executes one step of the Ford-Fulkerson algorithm.
-     * It finds an augmenting path using DFS and augments the flow along that path.
-     * @returns {boolean} True if an augmenting path was found, false if the algorithm is finished.
      */
     step(): boolean {
-        // Reset step info for the current step
+        if (this.finished) {
+            console.warn("Algorithm already finished");
+            return false;
+        }
+
         this.stepInfo = `Step ${this.stepCount + 1}: Searching for augmenting path...`;
 
         if (this.stepCount === 0) {
@@ -79,27 +112,42 @@ class FordFulkerson extends Algorithm {
 
         // Find an augmenting path using DFS
         const visited = new Set<string>();
-        const path: Edge[] = [];
+        const path: PathEdge[] = [];
 
         if (this.dfs(this.source, visited, path)) {
-            // If an augmenting path is found, calculate the flow to augment
+            // Calculate the bottleneck flow
             let flow = Infinity;
-            for (const edge of path) {
-                flow = Math.min(flow, edge.getResidualCapacity());
+            for (const pathEdge of path) {
+                flow = Math.min(flow, pathEdge.getResidualCapacity());
             }
 
             // Augment the flow along the path
-            for (const edge of path) {
-                edge.augment(flow);
-                this.highlightedEdges.push(edge);
+            for (const pathEdge of path) {
+                pathEdge.augment(flow);
+                this.highlightedEdges.push(pathEdge.edge);
             }
 
             this.maxFlow += flow;
-            this.stepInfo = `Augmented flow by ${flow}. Current max flow: ${this.maxFlow}`;
+            
+            // Create path description for logging
+            const pathStr = path.map(pe => 
+                `${pe.edge.getSource().getId()}${pe.isForward ? '→' : '←'}${pe.edge.getTarget().getId()}`
+            ).join(' → ');
+            
+            this.stepInfo = `Found path: ${pathStr}. Augmented flow by ${flow}. Current max flow: ${this.maxFlow}`;
+            console.log(this.stepInfo);
 
-            this.highlightedNodes = path.map(edge => edge.getSource()).concat(path.map(edge => edge.getTarget()));
+            // Get unique nodes from the path
+            const nodeSet = new Set<Node>();
+            nodeSet.add(this.source);
+            for (const pathEdge of path) {
+                nodeSet.add(pathEdge.edge.getSource());
+                nodeSet.add(pathEdge.edge.getTarget());
+            }
+            this.highlightedNodes = Array.from(nodeSet);
+
             this.stepCount++;
-            return true; // Continue to the next step
+            return true;
 
         } else {
             // No augmenting path found, algorithm is finished
@@ -108,22 +156,18 @@ class FordFulkerson extends Algorithm {
             this.highlightedNodes = [];
             this.highlightedEdges = [];
             this.stepCount++;
+            this.finished = true;
 
-            this.finished = true; // Mark the algorithm as finished
             console.log(`Algorithm finished in ${performance.now() - this.startTime}ms with max flow: ${this.maxFlow}`);
-
-            return false; // No more steps to take
+            return false;
         }
     }
 
     solve(): boolean {
-        // Start the algorithm and initialize the residual graph
         while (!this.finished) {
             this.step();
-            console.log(`Step ${this.stepCount}: ${this.stepInfo}`);
-            this.stepCount++;
             if (this.finished) {
-                break; // Exit if the algorithm is finished
+                break;
             }
         }
         this.stepInfo = `Max flow found: ${this.maxFlow}`;
@@ -131,12 +175,7 @@ class FordFulkerson extends Algorithm {
         return this.finished;
     }
 
-    /**
-     * Returns the current state of the algorithm for visualization.
-     * This includes highlighted nodes and edges based on the last found path.
-     */
     getCurrentState() {
-        // Return the current state of the algorithm
         return {
             highlightedNodes: this.highlightedNodes,
             highlightedEdges: this.highlightedEdges,

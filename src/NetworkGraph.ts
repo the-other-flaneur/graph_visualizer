@@ -1,11 +1,9 @@
-
 class Node {
-	private id: string; // unique identifier for the node
-	private x: number; // x-coordinate for graphical representation
-	private y: number; // y-coordinate for graphical representation
+	private id: string;
+	private x: number;
+	private y: number;
 
 	constructor(id: string, x: number, y: number) {
-
 		if (!id) {
 			throw new Error("Node ID must be defined");
 		}
@@ -25,46 +23,46 @@ class Node {
 			throw new Error("Node ID can only contain alphanumeric characters");
 		}
 
-		this.id = id; // unique identifier for the node
-
-		this.x = x; // random x-coordinate for graphical representation
-		this.y = y; // random y-coordinate for graphical representation
+		this.id = id;
+		this.x = x;
+		this.y = y;
 	}
 
 	getId() {
-		return this.id; // returns the unique identifier for the node
+		return this.id;
 	}
 
 	getX() {
-		return this.x; // returns the x-coordinate for graphical representation
+		return this.x;
 	}
+	
 	getY() {
-		return this.y; // returns the y-coordinate for graphical representation
+		return this.y;
 	}
 
 	setX(x: number) {
 		if (typeof x !== 'number') {
 			throw new Error("X coordinate must be a number");
 		}
-		this.x = x; // sets the x-coordinate for graphical representation
+		this.x = x;
 	}
+	
 	setY(y: number) {
 		if (typeof y !== 'number') {
 			throw new Error("Y coordinate must be a number");
 		}
-		this.y = y; // sets the y-coordinate for graphical representation
+		this.y = y;
 	}
 }
 
 class Edge {
-	private source: Node; // source node of the edge
-	private target: Node; // target node of the edge
-	private origCapacity: number; // original capacity of the edge
-	private capacity: number; // capacity of the edge
-	private flow: number; // current flow through the edge
+	private source: Node;
+	private target: Node;
+	private origCapacity: number;
+	private capacity: number;
+	private flow: number;
 
 	constructor(source: Node, target: Node, capacity: number) {
-
 		if (capacity <= 0) {
 			throw new Error("Capacity must be greater than 0");
 		}
@@ -75,28 +73,30 @@ class Edge {
 			throw new Error("Source and target nodes cannot be the same");
 		}
 
-		this.source = source; // source node
-		this.target = target; // target node
-		this.capacity = capacity; // capacity of the edge
-		this.flow = 0; // current flow through the edge
-		this.origCapacity = capacity; // original capacity of the edge
+		this.source = source;
+		this.target = target;
+		this.capacity = capacity;
+		this.flow = 0;
+		this.origCapacity = capacity;
 	}
 
 	getSource() {
-		return this.source; // returns the source node
+		return this.source;
 	}
+	
 	getTarget() {
-		return this.target; // returns the target node
+		return this.target;
 	}
+	
 	getCapacity() {
-		return this.capacity; // returns the capacity of the edge
+		return this.capacity;
 	}
 
 	setOrigCapacity(origCapacity: number) {
 		if (origCapacity < 0) {
 			throw new Error("Original capacity cannot be negative");
 		}
-		this.origCapacity = origCapacity; // sets the original capacity of the edge
+		this.origCapacity = origCapacity;
 	}
 
 	getOrigCapacity() {
@@ -104,80 +104,51 @@ class Edge {
 	}
 
 	setCapacity(newCapacity: number): void {
-    if (newCapacity < 0) {
-        throw new Error("Capacity cannot be negative");
-    }
-    this.capacity = newCapacity;
+		if (newCapacity < 0) {
+			throw new Error("Capacity cannot be negative");
+		}
+		this.capacity = newCapacity;
 	}
+	
 	getFlow() {
-		return this.flow; // returns the current flow through the edge
+		return this.flow;
 	}
+	
 	setFlow(flow: number) {
 		if (flow < 0 || flow > this.capacity) {
 			throw new Error("Flow must be between 0 and the edge's capacity");
 		}
-		this.flow = flow; // sets the current flow through the edge
+		this.flow = flow;
 	}
 	
+	// FIXED: Allow negative augmentation for backward edge flow reduction
 	augment(flow: number) {
-		if (flow < 0) {
-			throw new Error("Flow to augment cannot be negative");
+		const newFlow = this.flow + flow;
+		if (newFlow < 0 || newFlow > this.capacity) {
+			throw new Error(`Invalid flow augmentation: current=${this.flow}, augment=${flow}, capacity=${this.capacity}`);
 		}
-		if (this.flow + flow > this.capacity) {
-			throw new Error("Augmented flow exceeds edge capacity");
-		}
-		this.flow += flow; // augments the flow through the edge
+		this.flow = newFlow;
 	}
 
 	getResidualCapacity(): number {
-		return this.capacity - this.flow; // returns the residual capacity of the edge
+		return this.capacity - this.flow;
 	}
 }
 
-
 /**
- * Represents a directed network graph with support for source and sink nodes,
- * forward and backward edges, and node arrangement for visualization.
- *
- * This class provides methods to add nodes, edges, source and sink nodes,
- * retrieve nodes and edges, clear the graph, arrange nodes for drawing,
- * and clone the graph structure.
- *
- * - Nodes are stored in a map by their IDs.
- * - Forward and backward edges are stored in separate arrays.
- * - Source and sink nodes are tracked separately.
- *
- * Typical usage includes building flow networks for algorithms such as
- * maximum flow, and visualizing layered graphs.
- *
- * @remarks
- * Requires `node` and `edge` classes with appropriate methods such as
- * `getId()`, `getX()`, `getY()`, `setX()`, `setY()`, `getSource()`, `getTarget()`,
- * `getCapacity()`, and `getFlow()`.
- *
- * @example
- * ```typescript
- * const graph = new NetworkGraph();
- * graph.addSource("s");
- * graph.addSink("t");
- * graph.addNode("a");
- * graph.addEdge("s", "a", 10);
- * graph.addEdge("a", "t", 5);
- * graph.arrangeNodesForDrawing();
- * console.log(graph.prettyPrint());
- * ```
+ * Represents a directed network graph with proper residual graph support
+ * for maximum flow algorithms like Ford-Fulkerson.
  */
 class NetworkGraph {
-
-	private nodes: Map<string, Node>; // Map to hold nodes by their IDs
-	private forwardEdges: Edge[]; // Array to hold edges
-	private backwardEdges: Edge[]; // Array to hold backward edges
-	private t: Node | null = null; // Sink node, initially null
-	private s: Node | null = null; // Source node, initially null
+	private nodes: Map<string, Node>;
+	private forwardEdges: Edge[];
+	private backwardEdges: Edge[]; // Keep for potential explicit backward edges
+	private t: Node | null = null;
+	private s: Node | null = null;
 
 	constructor() {
-		this.nodes = new Map<string, Node>(); // Map to hold nodes by their IDs
-		this.forwardEdges = []; // Array to hold edges
+		this.nodes = new Map<string, Node>();
+		this.forwardEdges = [];
 		this.backwardEdges = [];
 	}
 
@@ -188,7 +159,7 @@ class NetworkGraph {
 		if (this.nodes.has(id)) {
 			throw new Error(`Node with ID ${id} already exists`);
 		}
-		this.s = new Node(id, 0, 0); // Create a new source node with default coordinates (0, 0)
+		this.s = new Node(id, 0, 0);
 		this.nodes.set(id, this.s);
 		return this.s;
 	}
@@ -200,7 +171,7 @@ class NetworkGraph {
 		if (this.nodes.has(id)) {
 			throw new Error(`Node with ID ${id} already exists`);
 		}
-		this.t = new Node(id, 0, 0); // Create a new sink node with default coordinates (0, 0)
+		this.t = new Node(id, 0, 0);
 		this.nodes.set(id, this.t);
 		return this.t;
 	}
@@ -209,7 +180,7 @@ class NetworkGraph {
 		if (this.nodes.has(id)) {
 			throw new Error(`Node with ID ${id} already exists`);
 		}
-		const newNode = new Node(id, 0, 0); // Create a new node with default coordinates (0, 0)
+		const newNode = new Node(id, 0, 0);
 		this.nodes.set(id, newNode);
 		return newNode;
 	}
@@ -248,7 +219,6 @@ class NetworkGraph {
 		return this.backwardEdges;
 	}
 
-	// Get all edges (both forward and backward)
 	getEdges() {
 		return [...this.forwardEdges, ...this.backwardEdges];
 	}
@@ -258,11 +228,15 @@ class NetworkGraph {
 	}
 
 	getForwardEdge(sourceId: string, targetId: string) {
-		return this.forwardEdges.find(edge => edge.getSource().getId() === sourceId && edge.getTarget().getId() === targetId);
+		return this.forwardEdges.find(edge => 
+			edge.getSource().getId() === sourceId && edge.getTarget().getId() === targetId
+		);
 	}
 
 	getBackwardEdge(sourceId: string, targetId: string) {
-		return this.backwardEdges.find(edge => edge.getSource().getId() === sourceId && edge.getTarget().getId() === targetId);
+		return this.backwardEdges.find(edge => 
+			edge.getSource().getId() === sourceId && edge.getTarget().getId() === targetId
+		);
 	}
 
 	getSource(): Node {
@@ -295,14 +269,46 @@ class NetworkGraph {
 		return this.backwardEdges.filter(edge => edge.getSource() === node);
 	}
 
+	// FIXED: This is the key method! Get backward edges in the residual graph
+	getBackwardEdgesTo(n: Node): Edge[] {
+		const node = this.nodes.get(n.getId());
+		if (!node) {
+			throw new Error(`Node with ID ${n.getId()} not found`);
+		}
+		
+		// In the residual graph, backward edges are forward edges with positive flow
+		// For node n, we want edges that END at n and have flow > 0
+		// These become backward edges FROM their original target TO their original source
+		const residualBackwardEdges: Edge[] = [];
+		
+		for (const edge of this.forwardEdges) {
+			// If this forward edge ends at node n and has positive flow,
+			// it creates a backward edge from n to edge.getSource()
+			if (edge.getTarget() === node && edge.getFlow() > 0) {
+				residualBackwardEdges.push(edge);
+			}
+		}
+		
+		// Also include any explicitly added backward edges
+		const explicitBackwardEdges = this.backwardEdges.filter(edge => edge.getTarget() === node);
+		
+		return [...residualBackwardEdges, ...explicitBackwardEdges];
+	}
+	
 	toString(): string {
 		return `NetworkGraph with ${this.nodes.size} nodes and ${this.forwardEdges.length} forward edges and ${this.backwardEdges.length} backward edges`;
 	}
 
 	prettyPrint(): string {
-		const nodeList = Array.from(this.nodes.values()).map(n => `${n.getId()} (${n.getX()}, ${n.getY()})`).join(", ");
-		const forwardEdgeList = this.forwardEdges.map(e => `${e.getSource().getId()} -> ${e.getTarget().getId()} (Capacity: ${e.getCapacity()}, Flow: ${e.getFlow()})`).join(", ");
-		const backwardEdgeList = this.backwardEdges.map(e => `${e.getSource().getId()} -> ${e.getTarget().getId()} (Capacity: ${e.getCapacity()}, Flow: ${e.getFlow()})`).join(", ");
+		const nodeList = Array.from(this.nodes.values())
+			.map(n => `${n.getId()} (${n.getX()}, ${n.getY()})`)
+			.join(", ");
+		const forwardEdgeList = this.forwardEdges
+			.map(e => `${e.getSource().getId()} -> ${e.getTarget().getId()} (Cap: ${e.getCapacity()}, Flow: ${e.getFlow()})`)
+			.join(", ");
+		const backwardEdgeList = this.backwardEdges
+			.map(e => `${e.getSource().getId()} -> ${e.getTarget().getId()} (Cap: ${e.getCapacity()}, Flow: ${e.getFlow()})`)
+			.join(", ");
 		return `Nodes: [${nodeList}]\nForward Edges: [${forwardEdgeList}]\nBackward Edges: [${backwardEdgeList}]`;
 	}
 
@@ -311,7 +317,7 @@ class NetworkGraph {
 			throw new Error("Source or sink node not defined.");
 		}
 
-		// Step 1: BFS to compute levels
+		// BFS to compute levels
 		const levels: Map<number, Node[]> = new Map();
 		const visited: Set<string> = new Set();
 		const queue: [Node, number][] = [[this.s, 0]];
@@ -336,14 +342,14 @@ class NetworkGraph {
 			}
 		}
 
-		// Step 2: Assign positions
+		// Assign positions
 		const maxLevel = Math.max(...levels.keys());
 		const layerSpacing = width / (maxLevel + 1);
 
 		for (const [level, nodesAtLevel] of levels.entries()) {
 			const verticalSpacing = height / (nodesAtLevel.length + 1);
 			nodesAtLevel.forEach((node, i) => {
-				const paddingX = 100; // adjust as needed
+				const paddingX = 100;
 				const x = level * layerSpacing + paddingX;
 				const y = (i + 1) * verticalSpacing;
 				node.setX(x);
@@ -365,7 +371,8 @@ class NetworkGraph {
 			const sourceNode = newGraph.nodes.get(e.getSource().getId());
 			const targetNode = newGraph.nodes.get(e.getTarget().getId());
 			if (sourceNode && targetNode) {
-				newGraph.addEdge(sourceNode.getId(), targetNode.getId(), e.getCapacity());
+				const newEdge = newGraph.addEdge(sourceNode.getId(), targetNode.getId(), e.getCapacity());
+				newEdge.setFlow(e.getFlow()); // Preserve flow state
 			}
 		});
 
@@ -373,13 +380,13 @@ class NetworkGraph {
 			const sourceNode = newGraph.nodes.get(e.getSource().getId());
 			const targetNode = newGraph.nodes.get(e.getTarget().getId());
 			if (sourceNode && targetNode) {
-				newGraph.addBackwardEdge(sourceNode.getId(), targetNode.getId(), e.getCapacity());
+				const newEdge = newGraph.addBackwardEdge(sourceNode.getId(), targetNode.getId(), e.getCapacity());
+				newEdge.setFlow(e.getFlow()); // Preserve flow state
 			}
 		});
 
 		return newGraph;
 	}
 }
-
 
 export { NetworkGraph, Node, Edge };
