@@ -11,8 +11,10 @@ class Dinic extends Algorithm {
         super("dinic");
     }
 
-    initialize(graph: NetworkGraph): void {
+    initialize(graph: NetworkGraph): Algorithm {
         // Initialize the algorithm with the given graph
+
+        return this;
     }
 
     /**

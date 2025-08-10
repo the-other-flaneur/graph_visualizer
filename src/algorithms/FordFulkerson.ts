@@ -10,7 +10,7 @@ class FordFulkerson extends Algorithm {
         super("ford-fulkerson");
     }  
 
-    initialize(graph: NetworkGraph): void {
+    initialize(graph: NetworkGraph): Algorithm {
         // Initialize the algorithm with the given graph
         console.log("Initializing Ford-Fulkerson algorithm");
         this.graph = graph;
@@ -23,6 +23,8 @@ class FordFulkerson extends Algorithm {
         this.stepInfo = "Algorithm initialized. Ready to find augmenting paths.";
         this.highlightedNodes = [];
         this.highlightedEdges = [];
+
+        return this;
     }
 
     /**

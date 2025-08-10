@@ -45,8 +45,8 @@
 
                 <div class="control-section">                        
                     <div class="bulk-input">
-                        <h4>Bulk Graph Input</h4>
-                        <textarea id="bulkInput" class="bulk-textarea" placeholder="Enter graph:
+                        <h4>Graph Input</h4>
+                        <textarea id="graphInput" class="bulk-textarea" placeholder="Enter graph:
 s
 A
 B
@@ -55,7 +55,7 @@ sA:10
 sB:10
 At:10
 Bt:10"></textarea>
-                        <button class="btn btn-primary" id="loadBulkBtn" style="width: 100%; margin-top: 8px;">Load Graph</button>
+                        <button class="btn btn-primary" id="loadGraphBtn" style="width: 100%; margin-top: 8px;">Load Graph</button>
                         <button class="btn btn-secondary" id="clearBtn" style="width: 100%; margin-top: 8px;">🗑 Clear</button>                    
                     </div>
                 </div>
@@ -128,15 +128,6 @@ Bt:10"></textarea>
                 </div>
 
                 <div class="control-section">
-                    <div id="traceContainer">
-                        <h3>Trace Log</h3>
-                        <div class="stats">
-                            <ul id="traceLog" style="font-family: 'JetBrains Mono', monospace; font-size: 0.8em; max-height: 150px; overflow-y: auto; padding-left: 1rem;"></ul>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="control-section">
                     <h3>Instructions</h3>
                     <div class="instructions" id="instructions">
                         <strong>Bulk Input:</strong><br>
@@ -151,8 +142,8 @@ Bt:10"></textarea>
         
         <!-- Compact Footer -->
         <footer id="footer">
-            <p>Created by Theotherflaneur • 
-            <a href="#" target="_blank">GitHub</a>
+            <p>Created by <a href="https://theotherflaneur.vercel.app/">Theotherflaneur</a> • 
+            <a href="https://github.com/the-other-flaneur/graph_visualizer" target="_blank">GitHub</a>
         </footer>
     </div>
 	<script type="module" src="./dist/main.js"></script>

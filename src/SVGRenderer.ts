@@ -5,7 +5,7 @@ import { Edge } from './NetworkGraph.js';
 class SVGRenderer {
   private svg: SVGElement;
 
-  constructor(svgId: string, graph: NetworkGraph) {
+  constructor(svgId: string) {
     const el = document.getElementById(svgId);
 
     if (!(el instanceof SVGElement)) {
@@ -15,7 +15,7 @@ class SVGRenderer {
     this.svg = el;
     this.clear(); // Optional: clear on init
 
-    console.log(`SVGRenderer initialized with graph: ${graph.getNodes().length} nodes, ${graph.getForwardEdges().length} forward edges, ${graph.getBackwardEdges().length} backward edges`);
+    console.log('SVGRenderer initialized');
   }
 
   clear() {

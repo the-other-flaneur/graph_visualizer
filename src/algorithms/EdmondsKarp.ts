@@ -11,8 +11,10 @@ class EdmondsKarp extends Algorithm {
         super("edmonds-karp");
     }
 
-    initialize(graph: NetworkGraph): void {
+    initialize(graph: NetworkGraph): Algorithm {
         // Initialize the algorithm with the given graph
+
+        return this;
     }
 
 
