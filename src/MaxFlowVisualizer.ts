@@ -1,10 +1,6 @@
-// MaxFlowVisualizer.ts (Refactored to work with new Solver, Algorithm, and AnimationController)
-
-import { NetworkGraph } from './NetworkGraph.js';
+import { NetworkGraph, Node, Edge } from './NetworkGraph.js';
 import { SVGRenderer } from './SVGRenderer.js';
 import { Parser } from './Parser.js';
-import { AnimationController } from './AnimationController.js';
-import { Solver } from './Solver.js';
 import { FordFulkerson } from './algorithms/FordFulkerson.js';
 import { EdmondsKarp } from './algorithms/EdmondsKarp.js';
 import { Dinic } from './algorithms/Dinics.js';
@@ -55,9 +51,9 @@ function canonicalizeUserInput(raw: string): string {
 class MaxFlowVisualizer {
   private renderer!: SVGRenderer;
   private graph!: NetworkGraph;
-  private animationController!: AnimationController;
-  private solver!: Solver;
-  private currentAlgorithm: string = 'edmonds-karp';
+  private currentAlgorithm!: string;
+  private speed: number = 1;
+  private algorithm!: Algorithm;
 
   private $(id: string): HTMLElement {
     const el = document.getElementById(id);
@@ -65,59 +61,96 @@ class MaxFlowVisualizer {
     return el;
   }
 
-  private getCanvasElement(): SVGSVGElement {
-    const el = document.getElementById('graph-canvas');
-    if (!(el instanceof SVGSVGElement)) throw new Error('graph-canvas must be an <svg>');
-    return el;
-  }
-
   initializeEventListeners(): void {
-    const $ = <T extends HTMLElement>(id: string): T => {
-      const el = document.getElementById(id);
-      if (!el) throw new Error(`Missing required element: #${id}`);
-      return el as T;
-    };
 
-    $('loadBulkBtn').addEventListener('click', () => this.loadBulkGraph());
-    
-    $('playBtn').addEventListener('click', () => {
-      this.animationController.play();
-    });
-    
-    $('pauseBtn').addEventListener('click', () => this.animationController.stop());
-    $('stepBtn').addEventListener('click', () => this.animationController.step());
-    $('resetBtn').addEventListener('click', () => this.reset());
-    
-    $('solveBtn').addEventListener('click', () => {
-      this.solver.solveAll();
-      this.updateStatsFromSolver();
-    });
-
-    $('clearBtn').addEventListener('click', () => this.clear());
-
-    const speedSlider = $('speedSlider') as HTMLInputElement;
-    speedSlider.addEventListener('input', () => {
-      this.animationController.setSpeed(parseFloat(speedSlider.value));
-      $('speedValue').textContent = `${this.animationController.getSpeed()}x`;
-    });
-
-    const algorithmSelect = $('algorithmSelect') as HTMLSelectElement;
+    const algorithmSelect = this.$('algorithmSelect') as HTMLSelectElement;
     algorithmSelect.addEventListener('change', () => {
       this.currentAlgorithm = algorithmSelect.value;
       this.updateAlgorithmInfo();
+      this.createAlgorithmInstance();
+      this.updateState();
+      console.log(`Algorithm changed to: ${this.currentAlgorithm}`);
     });
+
+    this.$('loadBulkBtn').addEventListener('click', () => this.loadBulkGraph());
+
+    this.$('clearBtn').addEventListener('click', () => {
+      this.graph = new NetworkGraph();
+      this.renderer.clear();
+      this.createAlgorithmInstance();
+      this.algorithm.initialize(this.graph);
+      this.updateStepInfo('', 0);
+      this.updateState();
+    });
+
+    this.$('solveBtn').addEventListener('click', () => {
+      console.log("solve btn pressed");
+
+      this.createAlgorithmInstance();
+
+      this.algorithm.solve();
+      this.updateState();
+      this.updateStepInfo(this.algorithm.stepInfo, this.algorithm.stepCount);
+    });
+    
+    this.$('playBtn').addEventListener('click', () => {
+      console.log("play btn pressed");
+
+      this.createAlgorithmInstance();
+
+      setInterval(() => {
+        if (this.algorithm && !this.algorithm.finished) {
+          this.algorithm.step();
+          this.updateState();
+          this.updateStepInfo(this.algorithm.stepInfo, this.algorithm.stepCount);
+        }
+      }, 1000 / this.speed);
+    });
+    
+    this.$('pauseBtn').addEventListener('click', () => {
+      console.log("pause btn pressed")
+      // pause functionality can be implemented if needed
+    });
+
+    this.$('stepBtn').addEventListener('click', () => {
+      if (this.algorithm) {
+        this.algorithm.step();
+        this.updateState();
+        this.updateStepInfo(this.algorithm.stepInfo, this.algorithm.stepCount);
+      } else {
+        console.error("Algorithm not initialized");
+      }
+    });
+
+    const speedSlider = this.$('speedSlider') as HTMLInputElement;
+    speedSlider.addEventListener('input', () => {
+      this.speed = parseFloat(speedSlider.value);
+      this.$('speedValue').textContent = `${this.speed}x`;
+    });
+
+    console.log("Event listeners initialized");
   }
 
-  private createAlgorithmInstance(): Algorithm {
+  private createAlgorithmInstance(): void {
+
+    const algorithmSelect = this.$('algorithmSelect') as HTMLSelectElement;
+    this.currentAlgorithm = algorithmSelect.value;
+      
     switch (this.currentAlgorithm) {
       case 'ford-fulkerson':
-        return new FordFulkerson();
+        this.algorithm = new FordFulkerson();
+        break;
       case 'dinic':
-        return new Dinic();
+        this.algorithm = new Dinic();
+        break;
       case 'edmonds-karp':
-      default:
-        return new EdmondsKarp();
+        this.algorithm = new EdmondsKarp();
+        break;
     }
+
+    this.algorithm.initialize(this.graph || new NetworkGraph());
+
+    console.log(`Created instance of: ${this.algorithm.name}`);
   }
 
   updateAlgorithmInfo() {
@@ -137,22 +170,31 @@ class MaxFlowVisualizer {
     this.$('stepIndicator').textContent = `Step: ${stepCount}`;
   }
 
-  updateStatsFromSolver() {
-    const stats = this.solver.getStats();
-    console.log('Solver Stats:', stats);
-    this.updateStats(
-      stats.maxFlow.toString(),
-      stats.iterations.toString(),
-      stats.paths.length.toString(),
-      stats.time.toString()
-    );
+  updateState() {
+    const state = this.algorithm.getCurrentState();
+    this.$('stepInfo').textContent = state.stepInfo;
+    this.$('stepCountValue').textContent = state.stepCount.toString();
+    this.$('maxFlowValue').textContent = state.maxFlow?.toString() || '0';
+    this.$('timeValue').textContent = state.startTime !== undefined && state.startTime !== 0
+      ? `${performance.now() - state.startTime} ms`
+      : '0';
+    this.highlightPath(state.highlightedNodes, state.highlightedEdges);
+    this.updateStepInfo(state.stepInfo, state.stepCount);
   }
 
-  updateStats(maxFlow: string, iterations: string, paths: string, time: string) {
-    this.$('maxFlowValue').textContent = maxFlow;
-    this.$('iterationsValue').textContent = iterations;
-    this.$('pathsValue').textContent = paths;
-    this.$('timeValue').textContent = time + 'ms';
+  highlightPath(highlightedNodes: Node[], highlightedEdges: Edge[]) {
+    console.log("Highlighting path");
+    console.log(`Highlighted nodes: ${highlightedNodes.map(n => n.getId()).join(', ')}`);
+    console.log(`Highlighted edges: ${highlightedEdges.map(e => `${e.getSource().getId()}-${e.getTarget().getId()}`).join(', ')}`);
+    
+    this.renderer.render(this.graph);
+
+    for (const n of highlightedNodes) {
+      this.renderer.highlightNode(n.getId());
+    }
+    for (const e of highlightedEdges) {
+      this.renderer.highlightEdge(e.getSource().getId(), e.getTarget().getId());
+    }
   }
 
   loadBulkGraph() {
@@ -166,40 +208,20 @@ class MaxFlowVisualizer {
       this.graph = parser.parse();
       this.graph.arrangeNodesForDrawing();
 
-      this.renderer.setGraph(this.graph);
-      this.renderer.clear();
-      this.renderer.render();
+      this.renderer.render(this.graph);
 
-      const algorithm = this.createAlgorithmInstance(); // Could be selected dynamically
-
-      this.solver = new Solver(algorithm, this.graph);
-      
-      this.animationController = new AnimationController(this.solver, this.renderer, this);
-    
       input.value = canonical;
     } catch (e) {
       alert(`Error loading graph: ${(e as Error).message}`);
     }
-  }
 
-  clear() {
-    this.graph.clear();
-    this.renderer.clear();
-    this.solver = new Solver(new FordFulkerson(), this.graph);
-    this.animationController = new AnimationController(this.solver, this.renderer, this);
-    this.updateStats("0", "0", "0", "0");
-  }
-
-  reset() {
-    this.animationController.stop();
-    this.loadBulkGraph();
-    this.updateStats("0", "0", "0", "0");
-    this.updateStepInfo("", 0);
+    console.log(`Graph loaded with ${this.graph.getNodes().length} nodes and ${this.graph.getForwardEdges().length} forward edges.`);
   }
 
   start() {
-    this.renderer = new SVGRenderer("graph-canvas", this.graph || new NetworkGraph());
+    console.log('start called');
     this.initializeEventListeners();
+    this.renderer = new SVGRenderer("graph-canvas", this.graph || new NetworkGraph());
   }
 }
 

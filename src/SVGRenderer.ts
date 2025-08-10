@@ -1,26 +1,21 @@
 import { NetworkGraph } from './NetworkGraph.js';
-import { node } from './NetworkGraph.js';
-import { edge } from './NetworkGraph.js';
+import { Node } from './NetworkGraph.js';
+import { Edge } from './NetworkGraph.js';
 
 class SVGRenderer {
-  private svg: SVGSVGElement;
-  private graph: NetworkGraph;
+  private svg: SVGElement;
 
   constructor(svgId: string, graph: NetworkGraph) {
     const el = document.getElementById(svgId);
 
-    if (!(el instanceof SVGSVGElement)) {
+    if (!(el instanceof SVGElement)) {
       throw new Error(`Element with ID '${svgId}' is not an <svg> element.`);
     }
 
     this.svg = el;
     this.clear(); // Optional: clear on init
-    this.graph = graph;
-  }
 
-  setGraph(graph: NetworkGraph) {
-    this.graph = graph;
-    this.render();
+    console.log(`SVGRenderer initialized with graph: ${graph.getNodes().length} nodes, ${graph.getForwardEdges().length} forward edges, ${graph.getBackwardEdges().length} backward edges`);
   }
 
   clear() {
@@ -40,6 +35,7 @@ class SVGRenderer {
     circle.setAttribute("stroke", "#1e3a8a"); // blue-900
     circle.setAttribute("stroke-width", "2.5");
     circle.setAttribute("filter", "url(#shadow)");
+    circle.setAttribute("id", `node-${id}`);
 
 
     const text = document.createElementNS(svgNS, "text");
@@ -82,6 +78,7 @@ class SVGRenderer {
   line.setAttribute("stroke", "#475569"); // slate-600
   line.setAttribute("stroke-width", "2.5");
   line.setAttribute("marker-end", "url(#arrowhead-forward)"); // Use forward arrowhead marker
+  line.setAttribute("id", `edge-${fromId}-${toId}`); // Optional: assign edge an ID
   
   if (fromId && toId) {
     line.setAttribute("id", `edge-${fromId}-${toId}`);
@@ -101,6 +98,7 @@ class SVGRenderer {
     text.setAttribute("fill", "#1e293b");
     text.setAttribute("font-size", "12");
     text.setAttribute("font-weight", "500");
+    text.setAttribute("id", `label-${fromId}-${toId}`); // Optional: assign label an ID
     text.textContent = label;
 
     this.svg.appendChild(text);
@@ -159,6 +157,7 @@ class SVGRenderer {
       text.setAttribute("fill", "#1e293b");
       text.setAttribute("font-size", "12");
       text.setAttribute("font-weight", "500");
+      text.setAttribute("id", `label-${fromId}-${toId}`); // Optional: assign label an ID
       text.textContent = label;
       this.svg.appendChild(text);
     }
@@ -166,7 +165,9 @@ class SVGRenderer {
 
 
   highlightNode(id: string, color: string = "#f6ad55") {
+    console.log(`Highlighting node: ${id} with color: ${color}`);
     const node = document.getElementById(`node-${id}`);
+    console.log(`Node element: ${node}`);
     if (node instanceof SVGCircleElement) {
       node.setAttribute("fill", color); // Use a highlight color (default: orange-400)
     }
@@ -181,35 +182,26 @@ class SVGRenderer {
     }
   }
 
-
-  clearHighlights() {
-    const nodes = this.svg.querySelectorAll("circle");
-    nodes.forEach(node => node.setAttribute("fill", "#4fd1c5")); // Reset to default color
-
-    const edges = this.svg.querySelectorAll("line");
-    edges.forEach(edge => edge.setAttribute("stroke", "#4a5568")); // Reset to default color
-  }
-
-  render() {
+  render(graph: NetworkGraph) {
     this.clear();
 
     // Draw nodes
-    this.graph.getNodes().forEach((n: node) => {
+    graph.getNodes().forEach((n: Node) => {
       this.drawNode(n.getId(), n.getX(), n.getY());
     });
 
     // Draw edges
-    this.graph.getForwardEdges().forEach((e: edge) => {
+    graph.getForwardEdges().forEach((e: Edge) => {
       const from = e.getSource();
       const to = e.getTarget();
-      this.drawForwardEdge(from.getX(), from.getY(), to.getX(), to.getY(), e.getCapacity().toString(), from.getId(), to.getId());
+      this.drawForwardEdge(from.getX(), from.getY(), to.getX(), to.getY(), e.getFlow().toString() + "/" + e.getOrigCapacity().toString(), from.getId(), to.getId());
     });
 
     // Draw backward edges
-    this.graph.getBackwardEdges().forEach((e: edge) => {
+    graph.getBackwardEdges().forEach((e: Edge) => {
       const from = e.getSource();
       const to = e.getTarget();
-      this.drawBackwardEdge(from.getX(), from.getY(), to.getX(), to.getY(), e.getCapacity().toString(), from.getId(), to.getId());
+      this.drawBackwardEdge(from.getX(), from.getY(), to.getX(), to.getY(), e.getFlow().toString() + "/" + e.getOrigCapacity().toString() , from.getId(), to.getId());
     });
 
     // Add arrowhead marker

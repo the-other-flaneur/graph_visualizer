@@ -1,5 +1,39 @@
 import { NetworkGraph } from "./NetworkGraph.js";
 
+
+/**
+ * Parses a textual representation of a network graph for flow algorithms.
+ *
+ * The expected input format is:
+ * - Line 0: Source node ID
+ * - Line 1: Sink node ID
+ * - Lines 2...n: Additional node IDs (optional, until first edge definition)
+ * - Remaining lines: Edge definitions in the format "XY: capacity", where
+ *   "X" is the source node, "Y" is the target node, and "capacity" is a positive integer.
+ *
+ * Example input:
+ * ```
+ * s
+ * t
+ * A
+ * B
+ * sA: 10
+ * AB: 5
+ * Bt: 7
+ * ```
+ *
+ * The parser constructs a `NetworkGraph` object, adds nodes and edges,
+ * and ensures backward edges are also created for flow algorithms.
+ *
+ * @remarks
+ * Throws an error if the input is malformed, missing source/sink, or contains invalid edge definitions.
+ *
+ * @example
+ * ```typescript
+ * const parser = new Parser(inputString);
+ * const graph = parser.parse();
+ * ```
+ */
 export class Parser {
   private input: string;
 

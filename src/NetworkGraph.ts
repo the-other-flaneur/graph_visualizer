@@ -1,7 +1,6 @@
 
-class node {
+class Node {
 	private id: string; // unique identifier for the node
-	private flow: number; // current flow through the node
 	private x: number; // x-coordinate for graphical representation
 	private y: number; // y-coordinate for graphical representation
 
@@ -27,7 +26,6 @@ class node {
 		}
 
 		this.id = id; // unique identifier for the node
-		this.flow = 0; // current flow through the node
 
 		this.x = x; // random x-coordinate for graphical representation
 		this.y = y; // random y-coordinate for graphical representation
@@ -58,13 +56,14 @@ class node {
 	}
 }
 
-class edge {
-	private source: node; // source node of the edge
-	private target: node; // target node of the edge
+class Edge {
+	private source: Node; // source node of the edge
+	private target: Node; // target node of the edge
+	private origCapacity: number; // original capacity of the edge
 	private capacity: number; // capacity of the edge
 	private flow: number; // current flow through the edge
 
-	constructor(source: node, target: node, capacity: number) {
+	constructor(source: Node, target: Node, capacity: number) {
 
 		if (capacity <= 0) {
 			throw new Error("Capacity must be greater than 0");
@@ -80,6 +79,7 @@ class edge {
 		this.target = target; // target node
 		this.capacity = capacity; // capacity of the edge
 		this.flow = 0; // current flow through the edge
+		this.origCapacity = capacity; // original capacity of the edge
 	}
 
 	getSource() {
@@ -91,6 +91,18 @@ class edge {
 	getCapacity() {
 		return this.capacity; // returns the capacity of the edge
 	}
+
+	setOrigCapacity(origCapacity: number) {
+		if (origCapacity < 0) {
+			throw new Error("Original capacity cannot be negative");
+		}
+		this.origCapacity = origCapacity; // sets the original capacity of the edge
+	}
+
+	getOrigCapacity() {
+		return this.origCapacity;
+	}
+
 	setCapacity(newCapacity: number): void {
     if (newCapacity < 0) {
         throw new Error("Capacity cannot be negative");
@@ -106,20 +118,67 @@ class edge {
 		}
 		this.flow = flow; // sets the current flow through the edge
 	}
+	
+	augment(flow: number) {
+		if (flow < 0) {
+			throw new Error("Flow to augment cannot be negative");
+		}
+		if (this.flow + flow > this.capacity) {
+			throw new Error("Augmented flow exceeds edge capacity");
+		}
+		this.flow += flow; // augments the flow through the edge
+	}
+
+	getResidualCapacity(): number {
+		return this.capacity - this.flow; // returns the residual capacity of the edge
+	}
 }
 
-// NetworkGraph class to represent the entire network graph
+
+/**
+ * Represents a directed network graph with support for source and sink nodes,
+ * forward and backward edges, and node arrangement for visualization.
+ *
+ * This class provides methods to add nodes, edges, source and sink nodes,
+ * retrieve nodes and edges, clear the graph, arrange nodes for drawing,
+ * and clone the graph structure.
+ *
+ * - Nodes are stored in a map by their IDs.
+ * - Forward and backward edges are stored in separate arrays.
+ * - Source and sink nodes are tracked separately.
+ *
+ * Typical usage includes building flow networks for algorithms such as
+ * maximum flow, and visualizing layered graphs.
+ *
+ * @remarks
+ * Requires `node` and `edge` classes with appropriate methods such as
+ * `getId()`, `getX()`, `getY()`, `setX()`, `setY()`, `getSource()`, `getTarget()`,
+ * `getCapacity()`, and `getFlow()`.
+ *
+ * @example
+ * ```typescript
+ * const graph = new NetworkGraph();
+ * graph.addSource("s");
+ * graph.addSink("t");
+ * graph.addNode("a");
+ * graph.addEdge("s", "a", 10);
+ * graph.addEdge("a", "t", 5);
+ * graph.arrangeNodesForDrawing();
+ * console.log(graph.prettyPrint());
+ * ```
+ */
 class NetworkGraph {
 
-	private nodes: Map<string, node>; // Map to hold nodes by their IDs
-	private forwardEdges: edge[]; // Array to hold edges
-	private backwardEdges: edge[] = []; // Array to hold backward edges
-	private t: node | null = null; // Sink node, initially null
-	private s: node | null = null; // Source node, initially null
+	private nodes: Map<string, Node>; // Map to hold nodes by their IDs
+	private forwardEdges: Edge[]; // Array to hold edges
+	private backwardEdges: Edge[]; // Array to hold backward edges
+	private t: Node | null = null; // Sink node, initially null
+	private s: Node | null = null; // Source node, initially null
 
 	constructor() {
-		this.nodes = new Map<string, node>(); // Map to hold nodes by their IDs
+		this.nodes = new Map<string, Node>(); // Map to hold nodes by their IDs
 		this.forwardEdges = []; // Array to hold edges
+		this.backwardEdges = [];
 	}
 
 	addSource(id: string) {
@@ -129,7 +188,7 @@ class NetworkGraph {
 		if (this.nodes.has(id)) {
 			throw new Error(`Node with ID ${id} already exists`);
 		}
-		this.s = new node(id, 0, 0); // Create a new source node with default coordinates (0, 0)
+		this.s = new Node(id, 0, 0); // Create a new source node with default coordinates (0, 0)
 		this.nodes.set(id, this.s);
 		return this.s;
 	}
@@ -141,7 +200,7 @@ class NetworkGraph {
 		if (this.nodes.has(id)) {
 			throw new Error(`Node with ID ${id} already exists`);
 		}
-		this.t = new node(id, 0, 0); // Create a new sink node with default coordinates (0, 0)
+		this.t = new Node(id, 0, 0); // Create a new sink node with default coordinates (0, 0)
 		this.nodes.set(id, this.t);
 		return this.t;
 	}
@@ -150,7 +209,7 @@ class NetworkGraph {
 		if (this.nodes.has(id)) {
 			throw new Error(`Node with ID ${id} already exists`);
 		}
-		const newNode = new node(id, 0, 0); // Create a new node with default coordinates (0, 0)
+		const newNode = new Node(id, 0, 0); // Create a new node with default coordinates (0, 0)
 		this.nodes.set(id, newNode);
 		return newNode;
 	}
@@ -161,7 +220,7 @@ class NetworkGraph {
 		if (!sourceNode || !targetNode) {
 			throw new Error(`Source or target node not found: ${sourceId}, ${targetId}`);
 		}
-		const newEdge = new edge(sourceNode, targetNode, capacity);
+		const newEdge = new Edge(sourceNode, targetNode, capacity);
 		this.forwardEdges.push(newEdge);
 		return newEdge;
 	}
@@ -172,7 +231,7 @@ class NetworkGraph {
 		if (!sourceNode || !targetNode) {
 			throw new Error(`Source or target node not found: ${sourceId}, ${targetId}`);
 		}
-		const newEdge = new edge(targetNode, sourceNode, capacity);
+		const newEdge = new Edge(targetNode, sourceNode, capacity);
 		this.backwardEdges.push(newEdge);
 		return newEdge;
 	}
@@ -180,12 +239,18 @@ class NetworkGraph {
 	getNodes() {
 		return Array.from(this.nodes.values());
 	}
+	
 	getForwardEdges() {
 		return this.forwardEdges;
 	}
 
 	getBackwardEdges() {
 		return this.backwardEdges;
+	}
+
+	// Get all edges (both forward and backward)
+	getEdges() {
+		return [...this.forwardEdges, ...this.backwardEdges];
 	}
 
 	getNode(id: string) {
@@ -200,29 +265,29 @@ class NetworkGraph {
 		return this.backwardEdges.find(edge => edge.getSource().getId() === sourceId && edge.getTarget().getId() === targetId);
 	}
 
-	getSource() {
+	getSource(): Node {
 		if (!this.s) {
 			throw new Error("Source node not defined");
 		}
 		return this.s;
 	}
 
-	getSink() {
+	getSink(): Node {
 		if (!this.t) {
 			throw new Error("Sink node not defined");
 		}
 		return this.t;
 	}
 
-	getForwardEdgesFrom(nodeId: string) {
-		const node = this.nodes.get(nodeId);
+	getForwardEdgesFrom(n: Node): Edge[] {
+		const node = this.nodes.get(n.getId());
 		if (!node) {
-			throw new Error(`Node with ID ${nodeId} not found`);
+			throw new Error(`Node with ID ${n.getId()} not found`);
 		}
 		return this.forwardEdges.filter(edge => edge.getSource() === node);
 	}
 
-	getBackwardEdgesFrom(nodeId: string) {
+	getBackwardEdgesFrom(nodeId: string): Edge[] {
 		const node = this.nodes.get(nodeId);
 		if (!node) {
 			throw new Error(`Node with ID ${nodeId} not found`);
@@ -230,23 +295,15 @@ class NetworkGraph {
 		return this.backwardEdges.filter(edge => edge.getSource() === node);
 	}
 
-	toString() {
+	toString(): string {
 		return `NetworkGraph with ${this.nodes.size} nodes and ${this.forwardEdges.length} forward edges and ${this.backwardEdges.length} backward edges`;
 	}
 
-	prettyPrint() {
+	prettyPrint(): string {
 		const nodeList = Array.from(this.nodes.values()).map(n => `${n.getId()} (${n.getX()}, ${n.getY()})`).join(", ");
 		const forwardEdgeList = this.forwardEdges.map(e => `${e.getSource().getId()} -> ${e.getTarget().getId()} (Capacity: ${e.getCapacity()}, Flow: ${e.getFlow()})`).join(", ");
 		const backwardEdgeList = this.backwardEdges.map(e => `${e.getSource().getId()} -> ${e.getTarget().getId()} (Capacity: ${e.getCapacity()}, Flow: ${e.getFlow()})`).join(", ");
 		return `Nodes: [${nodeList}]\nForward Edges: [${forwardEdgeList}]\nBackward Edges: [${backwardEdgeList}]`;
-	}
-
-	clear() {
-		this.nodes.clear(); // Clear all nodes
-		this.forwardEdges = []; // Clear all forward edges
-		this.backwardEdges = []; // Clear all backward edges
-		this.s = null; // Reset source node
-		this.t = null; // Reset sink node
 	}
 
 	arrangeNodesForDrawing(width: number = 800, height: number = 600): void {
@@ -255,9 +312,9 @@ class NetworkGraph {
 		}
 
 		// Step 1: BFS to compute levels
-		const levels: Map<number, node[]> = new Map();
+		const levels: Map<number, Node[]> = new Map();
 		const visited: Set<string> = new Set();
-		const queue: [node, number][] = [[this.s, 0]];
+		const queue: [Node, number][] = [[this.s, 0]];
 		visited.add(this.s.getId());
 
 		while (queue.length > 0) {
@@ -297,11 +354,11 @@ class NetworkGraph {
 
 	clone(): NetworkGraph {
 		const newGraph = new NetworkGraph();
-		newGraph.s = this.s ? new node(this.s.getId(), this.s.getX(), this.s.getY()) : null;
-		newGraph.t = this.t ? new node(this.t.getId(), this.t.getX(), this.t.getY()) : null;
+		newGraph.s = this.s ? new Node(this.s.getId(), this.s.getX(), this.s.getY()) : null;
+		newGraph.t = this.t ? new Node(this.t.getId(), this.t.getX(), this.t.getY()) : null;
 
 		this.nodes.forEach((n, id) => {
-			newGraph.nodes.set(id, new node(n.getId(), n.getX(), n.getY()));
+			newGraph.nodes.set(id, new Node(n.getId(), n.getX(), n.getY()));
 		});
 
 		this.forwardEdges.forEach(e => {
@@ -322,8 +379,7 @@ class NetworkGraph {
 
 		return newGraph;
 	}
-
 }
 
 
-export { NetworkGraph, node, edge };
+export { NetworkGraph, Node, Edge };
