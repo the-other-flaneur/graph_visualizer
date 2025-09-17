@@ -187,6 +187,4 @@ While this is primarily a personal learning project, suggestions and improvement
 - Submit pull requests for improvements
 - Share interesting test cases or network examples
 
-## License
-
-This project is open source and available under the [MIT License](LICENSE).
+Built with ❤️ as part of my Computer Science journey | [View Portfolio] ("https://theotherflaneur.vercel.app/")
