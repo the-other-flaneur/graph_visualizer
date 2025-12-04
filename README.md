@@ -113,7 +113,7 @@ Through building and using this visualizer, I gained deeper understanding of:
 
 ## Technical Implementation
 Project Structure
-
+```
 ├── index.html              # Main HTML file and entry point
 ├── style.css               # Application styling
 ├── src/
@@ -130,7 +130,7 @@ Project Structure
 ├── tsconfig.json           # TypeScript configuration
 ├── netlify.toml           # Netlify deployment configuration
 └── README.md              # This file
-
+``` 
 ### Architecture
 The project follows a clean, modular architecture:
 
